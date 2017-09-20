@@ -8,7 +8,8 @@
 const atom = require('vip-server-renderer');
 
 const DEFAULT_OPTIONS = {
-    mode: 'amd'
+    mode: 'amd',
+    strip: false
 };
 
 function addDeriveFile(file, type, content, required = false) {
@@ -25,22 +26,27 @@ function addDeriveFile(file, type, content, required = false) {
 
 }
 
-module.exports = function (content, file, options = DEFAULT_OPTIONS) {
+module.exports = function (content, file, options = {}) {
 
     if (Buffer.isBuffer(content)) {
         content = content.toString('utf-8');
     }
 
-    let result = atom.compile({
-        content: content,
-        strip: false,
-        mode: options.mode,
-        compilePHPComponent(relativePath) {
-            return ''
-                + 'dirname(__FILE__) . "/" '
-                + '. ' + JSON.stringify(relativePath + '.php');
-        }
-    });
+    options = Object.assign(
+        {},
+        DEFAULT_OPTIONS,
+        {
+            content: content,
+            compilePHPComponent(relativePath) {
+                return ''
+                    + 'dirname(__FILE__) . "/" '
+                    + '. ' + JSON.stringify(relativePath + '.php');
+            }
+        },
+        options
+    );
+
+    let result = atom.compile(options);
 
     let {js, php, css} = result.compiled;
 
