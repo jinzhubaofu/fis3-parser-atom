@@ -49,11 +49,18 @@ function addDeriveFile(file, type, content, required = false) {
 }
 
 module.exports = function (content, file, options = DEFAULT_OPTIONS) {
+    // 在atom文件先执行一次js编译，目的是将 __uri 等资源定位先做了，否则atom无法编译文件
+    content = fis.compile.partial(content, file, {
+        ext: 'js',
+        isJsLike: true
+    });
+    file.setContent(content);
+    // 继续走之后的 js parser 流程。
 
     if (Buffer.isBuffer(content)) {
         content = content.toString('utf-8');
     }
-
+    // console.log('content', file.fullname, content);
     let result = atom.compile({
         content: content,
         strip: false,
