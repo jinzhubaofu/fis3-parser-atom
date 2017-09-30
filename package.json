@@ -20,6 +20,6 @@
   "dependencies": {
     "less": "^2.7.2",
     "less-plugin-autoprefix": "^1.5.1",
-    "vip-server-renderer": "^1.0.20"
+    "vip-server-renderer": "1.0.39"
   }
 }
