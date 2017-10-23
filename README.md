@@ -33,7 +33,7 @@ fis.match('(**)/(*).atom', {
     // 输出为 commonjs 模块，这里可以按需要来指定 mode，支持 commonjs / amd / umd / global；
     parser: fis.plugin('atom', {
         mode: 'commonjs',
-        // 自己定制编译 javascript 代码
+        // 自己定制编译 javascript 代码，可参考 https://www.npmjs.com/package/vip-server-renderer#options
         compileJsScript(code) {
             return require('babel-core').transform(
                 code,
