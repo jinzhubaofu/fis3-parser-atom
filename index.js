@@ -54,7 +54,13 @@ module.exports = function (content, file, options = DEFAULT_OPTIONS) {
         ext: 'js',
         isJsLike: true
     });
+    // 处理诸如： <img src="../img/apply-for-toast.png" alt="apply-job">
+    content = fis.compile.partial(content, file, {
+        ext: 'html',
+        isHtmlLike: true
+    });
     file.setContent(content);
+
     // 继续走之后的 js parser 流程。
 
     if (Buffer.isBuffer(content)) {
