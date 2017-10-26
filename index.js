@@ -11,7 +11,8 @@ const LessPluginAutoPrefix = require('less-plugin-autoprefix');
 const less = require('less');
 
 const DEFAULT_OPTIONS = {
-    mode: 'amd'
+    mode: 'amd',
+    strip: false
 };
 
 function addDeriveFile(file, type, content, required = false) {
@@ -48,51 +49,54 @@ module.exports = function (content, file, options = DEFAULT_OPTIONS) {
     });
     file.setContent(content);
 
-
     if (Buffer.isBuffer(content)) {
         content = content.toString('utf-8');
     }
 
-    // atom compile 流程。
-    let result = atom.compile({
-        content: content,
-        strip: false,
-        mode: options.mode,
-        compilePHPComponent(relativePath) {
-            return ''
-                + 'dirname(__FILE__) . "/" '
-                + '. ' + JSON.stringify(relativePath + '.php');
-        },
-        compileStyle(code, options) {
-            if (options.lang === 'less') {
-                less.render(code, {
-                    relativeUrls: true,
-                    syncImport: true,
-                    plugins: [
-                        new LessPluginAutoPrefix({
-                            browsers: [
-                                'android >= 2.3',
-                                'ios >= 7'
-                            ]
-                        })
-                    ]
-                }, function (error, result) {
-                    if (error) {
-                        console.error(error.message, error.stack);
-                        return;
-                    }
-                    code = result.css;
+    options = Object.assign(
+        {},
+        DEFAULT_OPTIONS,
+        {
+            content: content,
+            compilePHPComponent(relativePath) {
+                return ''
+                    + 'dirname(__FILE__) . "/" '
+                    + '. ' + JSON.stringify(relativePath + '.php');
+            },
+            compileStyle(code, options) {
+                if (options.lang === 'less') {
+                    less.render(code, {
+                        relativeUrls: true,
+                        syncImport: true,
+                        plugins: [
+                            new LessPluginAutoPrefix({
+                                browsers: [
+                                    'android >= 2.3',
+                                    'ios >= 7'
+                                ]
+                            })
+                        ]
+                    }, function (error, result) {
+                        if (error) {
+                            console.error(error.message, error.stack);
+                            return;
+                        }
+                        code = result.css;
+                    });
+                }
+                // 编译css片段，支持资源定位
+                code = fis.compile.partial(code, file, {
+                    ext: 'css',
+                    isCssLike: true
                 });
-            }
-            // 编译css片段，支持资源定位
-            code = fis.compile.partial(code, file, {
-                ext: 'css',
-                isCssLike: true
-            });
 
-            return code;
-        }
-    });
+                return code;
+            }
+        },
+        options
+    );
+
+    let result = atom.compile(options);
 
     let {js, php, css} = result.compiled;
 
