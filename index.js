@@ -1,45 +1,32 @@
 /**
  * @file atom parser plugin for fis3
+ *       参考自 https://github.com/ccqgithub/fis3-parser-vue-component/blob/master/index.js
  * @author leon <ludafa@outlook.com>
  */
 
 /* eslint-disable fecs-no-require */
 
 const atom = require('vip-server-renderer');
+const LessPluginAutoPrefix = require('less-plugin-autoprefix');
+const less = require('less');
 
 const DEFAULT_OPTIONS = {
     mode: 'amd'
 };
 
-function addCssDeriveFile(file, type, content, required = false) {
-
-    let derivedFile = fis.file.wrap(`${file.realpath}.${type}`);
-
-    derivedFile.setContent(content);
-
-    file.derived.push(derivedFile);
-
-    if (required) {
-        file.addRequire(derivedFile.getId());
-    }
-    return derivedFile;
-}
-
 function addDeriveFile(file, type, content, required = false) {
-    // css也采用片段编译，更好的支持less、sass等其他语言
-    content = fis.compile.partial(content, file, {
-        ext: 'css',
-        isCssLike: true
-    });
-
     let derivedFile = fis.file.wrap(`${file.realpath}.${type}`);
     derivedFile.setContent(content);
-    derivedFile.isCssLike = true;
-    derivedFile.cache = file.cache;
-    fis.compile.process(derivedFile); // 走一遍css构建
-    derivedFile.links.forEach(function (derived) {
-        file.addLink(derived);
-    });
+
+    // 参考自https://github.com/ccqgithub/fis3-parser-vue-component/blob/master/index.js#L133
+    if (type === 'css') {
+        derivedFile.isCssLike = true;
+        derivedFile.cache = file.cache;
+        fis.compile.process(derivedFile); // 走一遍css构建
+        derivedFile.links.forEach(function (derived) {
+            file.addLink(derived);
+        });
+    }
 
     file.derived.push(derivedFile);
     if (required) {
@@ -54,19 +41,19 @@ module.exports = function (content, file, options = DEFAULT_OPTIONS) {
         ext: 'js',
         isJsLike: true
     });
-    // 处理诸如： <img src="../img/apply-for-toast.png" alt="apply-job">
+    // 处理template标签里诸如： <img src="../img/apply-for-toast.png" alt="apply-job">
     content = fis.compile.partial(content, file, {
         ext: 'html',
         isHtmlLike: true
     });
     file.setContent(content);
 
-    // 继续走之后的 js parser 流程。
 
     if (Buffer.isBuffer(content)) {
         content = content.toString('utf-8');
     }
-    // console.log('content', file.fullname, content);
+
+    // atom compile 流程。
     let result = atom.compile({
         content: content,
         strip: false,
@@ -78,8 +65,7 @@ module.exports = function (content, file, options = DEFAULT_OPTIONS) {
         },
         compileStyle(code, options) {
             if (options.lang === 'less') {
-                const LessPluginAutoPrefix = require('less-plugin-autoprefix');
-                require('less').render(code, {
+                less.render(code, {
                     relativeUrls: true,
                     syncImport: true,
                     plugins: [
@@ -98,7 +84,7 @@ module.exports = function (content, file, options = DEFAULT_OPTIONS) {
                     code = result.css;
                 });
             }
-            // css也采用片段编译，更好的支持less、sass等其他语言
+            // 编译css片段，支持资源定位
             code = fis.compile.partial(code, file, {
                 ext: 'css',
                 isCssLike: true
@@ -110,14 +96,10 @@ module.exports = function (content, file, options = DEFAULT_OPTIONS) {
 
     let {js, php, css} = result.compiled;
 
-    js = fis.compile.partial(js, file, {
-        ext: 'js',
-        isJsLike: true
-    });
-
+    // 把fis编译过程新增的文件加入fis处理流中, 可以match上
     addDeriveFile(file, 'php', php);
-    addCssDeriveFile(file, 'css', css, true);
+    addDeriveFile(file, 'css', css, true);
 
+    // .atom会被当成js处理
     return js;
-
 };
