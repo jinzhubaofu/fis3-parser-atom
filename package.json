@@ -1,6 +1,6 @@
 {
   "name": "fis3-parser-atom",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/jinzhubaofu/fis3-parser-atom#readme",
   "peerDependencies": {
-      "vip-server-renderer": "^1.0.46"
+    "vip-server-renderer": "^1.0.46"
   },
   "dependencies": {
     "less": "^2.7.2",
