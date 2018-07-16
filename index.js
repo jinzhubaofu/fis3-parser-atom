@@ -6,9 +6,10 @@
 
 /* eslint-disable fecs-no-require */
 
-const atom = require('vip-server-renderer');
-const LessPluginAutoPrefix = require('less-plugin-autoprefix');
+const atom = require('@baidu/atom-web-compiler');
 const less = require('less');
+const autoprefixer = require('autoprefixer');
+const postcss = require('postcss');
 
 const DEFAULT_OPTIONS = {
     mode: 'amd',
@@ -64,33 +65,35 @@ module.exports = function (content, file, options = DEFAULT_OPTIONS) {
                     + '. ' + JSON.stringify(relativePath + '.php');
             },
             compileStyle(code, options) {
+
                 if (options.lang === 'less') {
                     less.render(code, {
                         relativeUrls: true,
-                        syncImport: true,
-                        plugins: [
-                            new LessPluginAutoPrefix({
-                                browsers: [
-                                    'android >= 2.3',
-                                    'ios >= 7'
-                                ]
-                            })
-                        ]
+                        syncImport: true
                     }, function (error, result) {
                         if (error) {
-                            console.error(error.message, error.stack);
+                            console.error(error.message, error.stack); // eslint-disable-line no-console
                             return;
                         }
                         code = result.css;
                     });
                 }
+
                 // 编译css片段，支持资源定位
                 code = fis.compile.partial(code, file, {
                     ext: 'css',
                     isCssLike: true
                 });
 
-                return code;
+                return postcss([
+                    autoprefixer({
+                        browsers: [
+                            'android >= 2.3',
+                            'ios >= 7'
+                        ],
+                        remove: false
+                    })
+                ]).process(code).css;
             }
         },
         options
